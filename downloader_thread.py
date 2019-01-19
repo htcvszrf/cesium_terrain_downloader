@@ -67,8 +67,10 @@ def download_terrain_tiles(zoom, startX, endX, startY, endY):
   sys.stdout.flush()
   for x in range (startX, endX + 1):
     for y in range (startY, endY + 1):
+      if index <= passNum:
+        pass
       if index >= (passNum + processNum):
-          return
+        return
       queueLock.acquire()
       while workQueue.full():
         queueLock.release()
@@ -116,10 +118,7 @@ def process_data(threadName, q):
     if not workQueue.empty():
       data = q.get()
       queueLock.release()
-      if data[3] <= passNum:
-        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'pass.'), data[3]
-        pass
-      elif not os.path.exists('tiles/%s/%s/%s.terrain'%(data[0], data[1], data[2])):
+      if not os.path.exists('tiles/%s/%s/%s.terrain'%(data[0], data[1], data[2])):
         terrain_url = "%s%s/%s/%s.terrain?v1.1.0&%s"%(assert_url, data[0], data[1], data[2], access_token)
         terrain = urllib.urlopen(terrain_url).read()
 
@@ -145,9 +144,9 @@ def gzdecode(data):
 def main():
   global access_token, assert_url, exitFlag, passNum, processNum, index
   exitFlag = 0
-  passNum = 0 
+  passNum = 1800000 
   index = 0
-  processNum = 1831000
+  processNum = 31000
   get_access_token()
   # test_get_layer_and_terrain()
 
