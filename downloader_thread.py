@@ -67,32 +67,33 @@ def download_terrain_tiles(zoom, startX, endX, startY, endY):
   sys.stdout.flush()
   for x in range (startX, endX + 1):
     for y in range (startY, endY + 1):
+      index += 1
       if index <= passNum:
         pass
-      if index >= (passNum + processNum):
+      elif index >= (passNum + processNum):
         return
-      queueLock.acquire()
-      while workQueue.full():
-        queueLock.release()
-
-        for p in threads:
-          if p.is_alive() is False:
-            print '%s is DEAD, Now RELOAD it.'
-            sys.stdout.flush()
-            get_access_token()
-            threads.remove(p)
-            result = threadList.pop(p.name)
-            print result
-            sys.stdout.flush()
-            thread = myThread(result, p.name, workQueue)
-            threadList[p.name] = result
-            thread.start()
-            threads.append(thread)
-
+      else:
         queueLock.acquire()
-      index += 1
-      workQueue.put([zoom, x, y, index])
-      queueLock.release()
+        while workQueue.full():
+          queueLock.release()
+
+          for p in threads:
+            if p.is_alive() is False:
+              print '%s is DEAD, Now RELOAD it.'
+              sys.stdout.flush()
+              get_access_token()
+              threads.remove(p)
+              result = threadList.pop(p.name)
+              print result
+              sys.stdout.flush()
+              thread = myThread(result, p.name, workQueue)
+              threadList[p.name] = result
+              thread.start()
+              threads.append(thread)
+
+          queueLock.acquire()
+        workQueue.put([zoom, x, y])
+        queueLock.release()
 
 class myThread(threading.Thread):
   global exitFlag
@@ -128,9 +129,9 @@ def process_data(threadName, q):
         fileObject = open('tiles/%s/%s/%s.terrain'%(data[0], data[1], data[2]), 'wb')
         fileObject.write(gzdecode(terrain))
         fileObject.close()
-        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'done.'), data[3]
+        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'done.')
       # else :
-        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'exists.'), data[3]
+        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'exists.')
     else:
       queueLock.release()
 
