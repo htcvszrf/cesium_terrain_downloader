@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding:utf-8
 
+import sys
 import os
 import urllib
 import json
@@ -48,8 +49,8 @@ def print_requests():
 
   # maxzoom = int(layerObj['maxzoom'])
   # minzoom = int(layerObj['minzoom'])
-  maxzoom = 11
-  minzoom = 11
+  maxzoom = 13
+  minzoom = 13
   for i in range(minzoom, maxzoom + 1):
     # print 'zoom:', i, 'len:', len(layerObj['available'][i])
     for j in range(0, len(layerObj['available'][i])):
@@ -63,6 +64,7 @@ def print_requests():
 def download_terrain_tiles(zoom, startX, endX, startY, endY):
   global index, passNum, processNum
   print 'zoom:', zoom, 'start_x:', startX, 'start_y:', startY, 'end_x:', endX, 'end_y:', endY, 'current: ', index - passNum
+  sys.stdout.flush()
   for x in range (startX, endX + 1):
     for y in range (startY, endY + 1):
       if index >= (passNum + processNum):
@@ -74,10 +76,12 @@ def download_terrain_tiles(zoom, startX, endX, startY, endY):
         for p in threads:
           if p.is_alive() is False:
             print '%s is DEAD, Now RELOAD it.'
+            sys.stdout.flush()
             get_access_token()
             threads.remove(p)
             result = threadList.pop(p.name)
             print result
+            sys.stdout.flush()
             thread = myThread(result, p.name, workQueue)
             threadList[p.name] = result
             thread.start()
@@ -97,11 +101,13 @@ class myThread(threading.Thread):
     self.q = q
   def run(self):
     print "Starting " + self.name
+    sys.stdout.flush()
     try:
       process_data(self.name, self.q)
     except BaseException as e:
       logging.exception(e)
     print "Exiting " + self.name
+    sys.stdout.flush()
 
 def process_data(threadName, q):
   global access_token, assert_url, exitFlag, passNum
@@ -139,9 +145,9 @@ def gzdecode(data):
 def main():
   global access_token, assert_url, exitFlag, passNum, processNum, index
   exitFlag = 0
-  passNum = 1980000
+  passNum = 0 
   index = 0
-  processNum = 1000000
+  processNum = 1831000
   get_access_token()
   # test_get_layer_and_terrain()
 
@@ -169,5 +175,6 @@ def main():
     t.join()
 
   print "Exiting Main Thread"
+  sys.stdout.flush()
 
 main()
