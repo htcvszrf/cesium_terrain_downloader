@@ -10,7 +10,7 @@ import Queue
 import threading
 import logging
 
-global access_token, assert_url, exitFlag
+global access_token, assert_url, exitFlag, passNum, processNum, index
 queueLock = threading.Lock()
 workQueue = Queue.Queue(5000)
 threadList = {}
@@ -42,7 +42,7 @@ def test_get_layer_and_terrain():
   fileObject.close()
 
 def print_requests():
-  global access_token, assert_url
+  global access_token, assert_url, index
   layerStr = urllib.urlopen(assert_url + 'layer.json?' + access_token).read()
   layerObj = json.loads(gzdecode(layerStr))
 
@@ -61,9 +61,12 @@ def print_requests():
       download_terrain_tiles(i, startX, endX, startY, endY)
 
 def download_terrain_tiles(zoom, startX, endX, startY, endY):
-  print 'zoom:', zoom, 'start_x:', startX, 'start_y:', startY, 'end_x:', endX, 'end_y:', endY
+  global index, passNum, processNum
+  print 'zoom:', zoom, 'start_x:', startX, 'start_y:', startY, 'end_x:', endX, 'end_y:', endY, 'current: ', index - passNum
   for x in range (startX, endX + 1):
     for y in range (startY, endY + 1):
+      if index > (passNum + processNum):
+          return
       queueLock.acquire()
       while workQueue.full():
         queueLock.release()
@@ -81,7 +84,8 @@ def download_terrain_tiles(zoom, startX, endX, startY, endY):
             threads.append(thread)
 
         queueLock.acquire()
-      workQueue.put([zoom, x, y])
+      index += 1
+      workQueue.put([zoom, x, y, index])
       queueLock.release()
 
 class myThread(threading.Thread):
@@ -106,6 +110,9 @@ def process_data(threadName, q):
     if not workQueue.empty():
       data = q.get()
       queueLock.release()
+      if data[3] < passNum: 
+        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'pass.')
+        pass
       if not os.path.exists('tiles/%s/%s/%s.terrain'%(data[0], data[1], data[2])):
         terrain_url = "%s%s/%s/%s.terrain?v1.1.0&%s"%(assert_url, data[0], data[1], data[2], access_token)
         terrain = urllib.urlopen(terrain_url).read()
@@ -130,8 +137,11 @@ def gzdecode(data):
   return data2
 
 def main():
-  global access_token, assert_url, exitFlag
+  global access_token, assert_url, exitFlag, passNum, processNum, index
   exitFlag = 0
+  passNum = 0 
+  index = 0
+  processNum = 1500000
   get_access_token()
   # test_get_layer_and_terrain()
 
