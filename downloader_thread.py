@@ -48,8 +48,8 @@ def print_requests():
 
   # maxzoom = int(layerObj['maxzoom'])
   # minzoom = int(layerObj['minzoom'])
-  maxzoom = 13
-  minzoom = 13
+  maxzoom = 11
+  minzoom = 11
   for i in range(minzoom, maxzoom + 1):
     # print 'zoom:', i, 'len:', len(layerObj['available'][i])
     for j in range(0, len(layerObj['available'][i])):
@@ -65,7 +65,7 @@ def download_terrain_tiles(zoom, startX, endX, startY, endY):
   print 'zoom:', zoom, 'start_x:', startX, 'start_y:', startY, 'end_x:', endX, 'end_y:', endY, 'current: ', index - passNum
   for x in range (startX, endX + 1):
     for y in range (startY, endY + 1):
-      if index > (passNum + processNum):
+      if index >= (passNum + processNum):
           return
       queueLock.acquire()
       while workQueue.full():
@@ -104,16 +104,16 @@ class myThread(threading.Thread):
     print "Exiting " + self.name
 
 def process_data(threadName, q):
-  global access_token, assert_url, exitFlag
+  global access_token, assert_url, exitFlag, passNum
   while not exitFlag:
     queueLock.acquire()
     if not workQueue.empty():
       data = q.get()
       queueLock.release()
-      if data[3] < passNum: 
-        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'pass.')
+      if data[3] <= passNum:
+        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'pass.'), data[3]
         pass
-      if not os.path.exists('tiles/%s/%s/%s.terrain'%(data[0], data[1], data[2])):
+      elif not os.path.exists('tiles/%s/%s/%s.terrain'%(data[0], data[1], data[2])):
         terrain_url = "%s%s/%s/%s.terrain?v1.1.0&%s"%(assert_url, data[0], data[1], data[2], access_token)
         terrain = urllib.urlopen(terrain_url).read()
 
@@ -123,9 +123,9 @@ def process_data(threadName, q):
         fileObject = open('tiles/%s/%s/%s.terrain'%(data[0], data[1], data[2]), 'wb')
         fileObject.write(gzdecode(terrain))
         fileObject.close()
-        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'done.')
+        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'done.'), data[3]
       # else :
-        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'exists.')
+        # print '%s download: %s_%s_%s.terrain is %s'%(threadName, data[0], data[1], data[2], 'exists.'), data[3]
     else:
       queueLock.release()
 
@@ -139,9 +139,9 @@ def gzdecode(data):
 def main():
   global access_token, assert_url, exitFlag, passNum, processNum, index
   exitFlag = 0
-  passNum = 0 
+  passNum = 1980000
   index = 0
-  processNum = 1500000
+  processNum = 1000000
   get_access_token()
   # test_get_layer_and_terrain()
 
